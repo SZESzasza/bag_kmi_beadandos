@@ -1,5 +1,8 @@
-# `ros2_cpp_template` package
+# `bag_kmi_beadandos` package
 ROS 2 C++ package.  [![Static Badge](https://img.shields.io/badge/ROS_2-Humble-34aec5)](https://docs.ros.org/en/humble/)
+
+A package egy node-ból áll. A `/traffic_light_node` egy közlekedési lámpa állapotgépét valósítja meg: időzítő segítségével lépteti a `RED` → `RED_YELLOW` → `GREEN` → `YELLOW` fázisokat. Az aktuális fázis nevét egy `std_msgs/String` típusú topicban, a lámpa 3D-s megjelenítését pedig egy `visualization_msgs/MarkerArray` típusú topicban hirdeti, amely RViz2-ben megjeleníthető. A fázisok hossza paraméterekkel állítható. Megvalósítás `ROS 2 Humble` alatt.
+
 ## Packages and build
 
 It is assumed that the workspace is `~/ros2_ws/`.
@@ -9,7 +12,7 @@ It is assumed that the workspace is `~/ros2_ws/`.
 cd ~/ros2_ws/src
 ```
 ``` r
-git clone https://github.com/sze-info/ros2_cpp_template
+git clone https://github.com/<github_felhasznalonev>/bag_kmi_beadandos
 ```
 
 ### Build ROS 2 packages
@@ -17,7 +20,7 @@ git clone https://github.com/sze-info/ros2_cpp_template
 cd ~/ros2_ws
 ```
 ``` r
-colcon build --packages-select ros2_cpp_template --symlink-install
+colcon build --packages-select bag_kmi_beadandos --symlink-install
 ```
 
 <details>
@@ -28,29 +31,63 @@ source ~/ros2_ws/install/setup.bash
 ```
 </details>
 
+### Run
+
+Node és RViz2 együtt, előre beállított nézettel:
 ``` r
-ros2 launch ros2_cpp_template launch_example1.launch.py
+ros2 launch bag_kmi_beadandos traffic_light_rviz.launch.py
 ```
 
-# Delete this part if you are using it as a template
+Csak a node, paraméterekkel:
+``` r
+ros2 launch bag_kmi_beadandos traffic_light.launch.py
+```
 
-ROS 2 pacage template, to get started, use template by clicking on the Green button labeled [`Use this template`](https://github.com/sze-info/ros2_cpp_template/generate) / [`Create new repository`](https://github.com/sze-info/ros2_cpp_template/generate). 
+Vagy közvetlenül, egyedi fázisidőkkel:
+``` r
+ros2 run bag_kmi_beadandos traffic_light_node --ros-args -p green_time:=8.0 -p red_time:=3.0
+```
 
-<p align="center"><img src="img/use_this_template01.png" width="60%" /></p>
+Az aktuális fázis figyelése:
+``` r
+ros2 topic echo /traffic_light/state
+```
 
+## Parameters
 
-Let's assume 
-- your Github username is `mycoolusername`
-- your ROS 2 repo shold be `cool_ros2_package`
+| Paraméter | Típus | Alapérték | Leírás |
+|---|---|---|---|
+| `red_time` | double | `5.0` | Piros fázis hossza [s] |
+| `red_yellow_time` | double | `1.5` | Piros-sárga fázis hossza [s] |
+| `green_time` | double | `5.0` | Zöld fázis hossza [s] |
+| `yellow_time` | double | `2.0` | Sárga fázis hossza [s] |
 
-Replace everything in the cloned repo:
+## Graph
 
-- `ros2_cpp_template` >> `cool_ros2_package` (the folder was already renamed after `Use this template`)
-- `sze-info` >> `mycoolusername`
-- find all `todo` strings and fill the blanks
+``` mermaid
+graph LR;
 
-The easiest way is VS code:
+tl([ /traffic_light_node]):::red --> state[ /traffic_light/state<br/>std_msgs/String]:::light
+tl --> markers[ /traffic_light/markers<br/>visualization_msgs/MarkerArray]:::light
+markers --> rviz([ /rviz2]):::dark
 
-<p align="center"><img src="img/replace01.png" width="60%" /></p>
+classDef light fill:#34aec5,stroke:#152742,stroke-width:2px,color:#152742  
+classDef dark fill:#152742,stroke:#34aec5,stroke-width:2px,color:#34aec5
+classDef white fill:#ffffff,stroke:#152742,stroke-width:2px,color:#152742
+classDef red fill:#ef4638,stroke:#152742,stroke-width:2px,color:#fff
+```
 
-Now `colcon build` your ROS 2 package and you can start wokring.
+## State machine
+
+``` mermaid
+stateDiagram-v2
+    direction LR
+    RED --> RED_YELLOW: red_time
+    RED_YELLOW --> GREEN: red_yellow_time
+    GREEN --> YELLOW: green_time
+    YELLOW --> RED: yellow_time
+```
+
+## Screenshot
+
+![](img/rviz01.png)
